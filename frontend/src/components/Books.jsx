@@ -4,6 +4,7 @@ import '../App.css'
 
 function Books() {
   const [books, setBooks] = useState([])
+  const [filteredBooks, setFilteredBooks] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -12,10 +13,20 @@ function Books() {
     value: '',
     copies: ''
   })
+  const [filters, setFilters] = useState({
+    availability: 'all',
+    genre: 'all'
+  })
+  const [sortBy, setSortBy] = useState('title') 
+  const [sortOrder, setSortOrder] = useState('asc')
 
   useEffect(() => {
     loadBooks()
   }, [])
+
+  useEffect(() => {
+    applyFiltersAndSort()
+  }, [books, filters, sortBy, sortOrder])
 
   const loadBooks = async () => {
     try {
@@ -24,6 +35,63 @@ function Books() {
     } catch (error) {
       console.error('Error loading books:', error)
     }
+  }
+
+  const applyFiltersAndSort = () => {
+    let filtered = [...books]
+
+    if (filters.availability === 'available') {
+      filtered = filtered.filter(book => book.is_available)
+    } else if (filters.availability === 'unavailable') {
+      filtered = filtered.filter(book => !book.is_available)
+    }
+
+    if (filters.genre !== 'all') {
+      filtered = filtered.filter(book => book.genre === filters.genre)
+    }
+
+    filtered.sort((a, b) => {
+      let aVal, bVal
+      
+      switch (sortBy) {
+        case 'title':
+          aVal = a.title.toLowerCase()
+          bVal = b.title.toLowerCase()
+          break
+        case 'author':
+          aVal = a.author.toLowerCase()
+          bVal = b.author.toLowerCase()
+          break
+        case 'genre':
+          aVal = a.genre
+          bVal = b.genre
+          break
+        case 'value':
+          aVal = a.value
+          bVal = b.value
+          break
+        case 'available_copies':
+          aVal = a.available_copies
+          bVal = b.available_copies
+          break
+        case 'total_copies':
+          aVal = a.total_copies
+          bVal = b.total_copies
+          break
+        default:
+          return 0
+      }
+
+      if (typeof aVal === 'string') {
+        return sortOrder === 'asc' 
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal)
+      } else {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
+      }
+    })
+
+    setFilteredBooks(filtered)
   }
 
   const handleSubmit = async (e) => {
@@ -53,6 +121,88 @@ function Books() {
         </button>
       </div>
 
+      <div style={{ 
+        display: 'flex', 
+        gap: '1rem', 
+        marginBottom: '1.5rem', 
+        flexWrap: 'wrap',
+        padding: '1rem',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '8px'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Filter by Availability:</label>
+          <select
+            className="form-select"
+            style={{ width: '200px' }}
+            value={filters.availability}
+            onChange={(e) => setFilters({ ...filters, availability: e.target.value })}
+          >
+            <option value="all">All Books</option>
+            <option value="available">Available Only</option>
+            <option value="unavailable">Unavailable Only</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Filter by Genre:</label>
+          <select
+            className="form-select"
+            style={{ width: '200px' }}
+            value={filters.genre}
+            onChange={(e) => setFilters({ ...filters, genre: e.target.value })}
+          >
+            <option value="all">All Genres</option>
+            {genres.map(genre => (
+              <option key={genre} value={genre}>{genre.replace('_', ' ')}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Sort by:</label>
+          <select
+            className="form-select"
+            style={{ width: '200px' }}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+            <option value="genre">Genre</option>
+            <option value="value">Value</option>
+            <option value="available_copies">Available Copies</option>
+            <option value="total_copies">Total Copies</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Order:</label>
+          <select
+            className="form-select"
+            style={{ width: '150px' }}
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+          >
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+          <button 
+            className="button button-secondary"
+            onClick={() => {
+              setFilters({ availability: 'all', genre: 'all' })
+              setSortBy('title')
+              setSortOrder('asc')
+            }}
+          >
+            Reset Filters
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '1rem', color: '#666' }}>
+        Showing {filteredBooks.length} of {books.length} books
+      </div>
+
       <table className="table">
         <thead>
           <tr>
@@ -68,7 +218,7 @@ function Books() {
           </tr>
         </thead>
         <tbody>
-          {books.map(book => (
+          {filteredBooks.map(book => (
             <tr key={book.id}>
               <td><strong>{book.title}</strong></td>
               <td>{book.author}</td>
