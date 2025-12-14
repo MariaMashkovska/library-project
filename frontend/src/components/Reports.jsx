@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { reportsAPI } from '../api/api'
+import * as XLSX from 'xlsx'
 import '../App.css'
 
 function Reports() {
@@ -101,6 +102,75 @@ function Reports() {
         return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
       }
     })
+  }
+
+  const downloadCSV = () => {
+    if (!financialHistory || financialHistory.length === 0) return
+
+    const sortedData = sortData(financialHistory, historySort.by, historySort.order)
+    
+    // Prepare CSV headers
+    const headers = ['Date', 'Type', 'Description', 'Amount', 'Transaction Type']
+    
+    // Convert data to CSV format
+    const csvRows = [
+      headers.join(','),
+      ...sortedData.map(transaction => {
+        const date = new Date(transaction.date).toLocaleDateString()
+        const type = transaction.type
+        const description = `"${transaction.description.replace(/"/g, '""')}"` // Escape quotes in CSV
+        const amount = transaction.amount.toFixed(2)
+        const transactionType = transaction.transaction_type === 'income' ? 'Income' :
+                               transaction.transaction_type === 'fine' ? 'Fine' : 'Deposit'
+        return [date, type, description, amount, transactionType].join(',')
+      })
+    ]
+    
+    const csvContent = csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    
+    link.setAttribute('href', url)
+    link.setAttribute('download', `financial_history_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const downloadExcel = () => {
+    if (!financialHistory || financialHistory.length === 0) return
+
+    const sortedData = sortData(financialHistory, historySort.by, historySort.order)
+    
+    // Prepare data for Excel
+    const excelData = sortedData.map(transaction => ({
+      'Date': new Date(transaction.date).toLocaleDateString(),
+      'Type': transaction.type,
+      'Description': transaction.description,
+      'Amount': transaction.amount,
+      'Transaction Type': transaction.transaction_type === 'income' ? 'Income' :
+                         transaction.transaction_type === 'fine' ? 'Fine' : 'Deposit'
+    }))
+    
+    // Create workbook and worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Financial History')
+    
+    // Set column widths
+    const columnWidths = [
+      { wch: 12 }, // Date
+      { wch: 15 }, // Type
+      { wch: 50 }, // Description
+      { wch: 12 }, // Amount
+      { wch: 18 }  // Transaction Type
+    ]
+    worksheet['!cols'] = columnWidths
+    
+    // Download file
+    XLSX.writeFile(workbook, `financial_history_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
   return (
@@ -317,27 +387,47 @@ function Reports() {
                   Complete history of all financial transactions
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Sort by:</label>
-                <select
-                  className="form-select"
-                  style={{ width: '150px' }}
-                  value={historySort.by}
-                  onChange={(e) => setHistorySort({ ...historySort, by: e.target.value })}
-                >
-                  <option value="date">Date</option>
-                  <option value="type">Type</option>
-                  <option value="amount">Amount</option>
-                </select>
-                <select
-                  className="form-select"
-                  style={{ width: '120px' }}
-                  value={historySort.order}
-                  onChange={(e) => setHistorySort({ ...historySort, order: e.target.value })}
-                >
-                  <option value="desc">Descending</option>
-                  <option value="asc">Ascending</option>
-                </select>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Sort by:</label>
+                  <select
+                    className="form-select"
+                    style={{ width: '150px' }}
+                    value={historySort.by}
+                    onChange={(e) => setHistorySort({ ...historySort, by: e.target.value })}
+                  >
+                    <option value="date">Date</option>
+                    <option value="type">Type</option>
+                    <option value="amount">Amount</option>
+                  </select>
+                  <select
+                    className="form-select"
+                    style={{ width: '120px' }}
+                    value={historySort.order}
+                    onChange={(e) => setHistorySort({ ...historySort, order: e.target.value })}
+                  >
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    className="button button-secondary"
+                    onClick={downloadCSV}
+                    disabled={!financialHistory || financialHistory.length === 0}
+                    style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                  >
+                    Download CSV
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    onClick={downloadExcel}
+                    disabled={!financialHistory || financialHistory.length === 0}
+                    style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                  >
+                    Download Excel
+                  </button>
+                </div>
               </div>
             </div>
             <table className="table">
