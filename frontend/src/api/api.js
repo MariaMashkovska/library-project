@@ -14,7 +14,8 @@ export const booksAPI = {
   getAll: (availableOnly = false) => 
     api.get('/books', { params: { available_only: availableOnly } }),
   getById: (id) => api.get(`/books/${id}`),
-  create: (book) => api.post('/books', book)
+  create: (book) => api.post('/books', book),
+  delete: (id) => api.delete(`/books/${id}`)
 }
 
 // Readers API
@@ -22,7 +23,8 @@ export const readersAPI = {
   getAll: () => api.get('/readers'),
   getById: (id) => api.get(`/readers/${id}`),
   create: (reader) => api.post('/readers', reader),
-  getRentals: (id) => api.get(`/readers/${id}/rentals`)
+  getRentals: (id) => api.get(`/readers/${id}/rentals`),
+  delete: (id) => api.delete(`/readers/${id}`)
 }
 
 // Rentals API

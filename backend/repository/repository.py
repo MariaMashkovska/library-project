@@ -158,6 +158,13 @@ class RentalRepository(Repository):
         rentals = [rental_model.to_rental() for rental_model in rental_models]
         return [r for r in rentals if r.is_overdue()]
     
+    def get_non_returned_rentals(self) -> List[Rental]:
+        """Get all rentals that are not returned (ACTIVE or OVERDUE)"""
+        rental_models = RentalModel.query.filter(
+            RentalModel.status.in_([RentalStatus.ACTIVE, RentalStatus.OVERDUE])
+        ).all()
+        return [rental_model.to_rental() for rental_model in rental_models]
+    
     def get_reader_rentals(self, reader_id: int) -> List[Rental]:
         rental_models = RentalModel.query.filter(RentalModel.reader_id == reader_id).all()
         return [rental_model.to_rental() for rental_model in rental_models]

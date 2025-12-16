@@ -4,14 +4,12 @@ import * as XLSX from 'xlsx'
 import '../App.css'
 
 function Reports() {
-  const [availableBooks, setAvailableBooks] = useState(null)
   const [issuedBooks, setIssuedBooks] = useState(null)
   const [financialStatus, setFinancialStatus] = useState(null)
   const [financialHistory, setFinancialHistory] = useState(null)
-  const [activeTab, setActiveTab] = useState('available')
+  const [activeTab, setActiveTab] = useState('financial')
   
   // Sorting states for different tabs
-  const [availableBooksSort, setAvailableBooksSort] = useState({ by: 'title', order: 'asc' })
   const [issuedBooksSort, setIssuedBooksSort] = useState({ by: 'issue_date', order: 'desc' })
   const [historySort, setHistorySort] = useState({ by: 'date', order: 'desc' })
 
@@ -21,13 +19,11 @@ function Reports() {
 
   const loadReports = async () => {
     try {
-      const [availableRes, issuedRes, financialRes, historyRes] = await Promise.all([
-        reportsAPI.getAvailableBooks(),
+      const [issuedRes, financialRes, historyRes] = await Promise.all([
         reportsAPI.getIssuedBooks(),
         reportsAPI.getFinancialStatus(),
         reportsAPI.getFinancialHistory()
       ])
-      setAvailableBooks(availableRes.data)
       setIssuedBooks(issuedRes.data)
       setFinancialStatus(financialRes.data)
       setFinancialHistory(historyRes.data)
@@ -43,22 +39,6 @@ function Reports() {
       let aVal, bVal
       
       switch (sortBy) {
-        case 'title':
-          aVal = a.title?.toLowerCase() || ''
-          bVal = b.title?.toLowerCase() || ''
-          break
-        case 'author':
-          aVal = a.author?.toLowerCase() || ''
-          bVal = b.author?.toLowerCase() || ''
-          break
-        case 'genre':
-          aVal = a.genre || ''
-          bVal = b.genre || ''
-          break
-        case 'available_copies':
-          aVal = a.available_copies || 0
-          bVal = b.available_copies || 0
-          break
         case 'issue_date':
         case 'date':
           aVal = new Date(a[sortBy] || a.issue_date || 0)
@@ -180,13 +160,6 @@ function Reports() {
         
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #e0e0e0' }}>
           <button
-            className={`button ${activeTab === 'available' ? '' : 'button-secondary'}`}
-            onClick={() => setActiveTab('available')}
-            style={{ marginBottom: '1rem' }}
-          >
-            Available Books
-          </button>
-          <button
             className={`button ${activeTab === 'issued' ? '' : 'button-secondary'}`}
             onClick={() => setActiveTab('issued')}
             style={{ marginBottom: '1rem' }}
@@ -208,61 +181,6 @@ function Reports() {
             Financial History
           </button>
         </div>
-
-        {activeTab === 'available' && availableBooks && (
-          <div>
-            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-                Total Available Books: {availableBooks.total_available}
-              </h3>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Sort by:</label>
-                <select
-                  className="form-select"
-                  style={{ width: '150px' }}
-                  value={availableBooksSort.by}
-                  onChange={(e) => setAvailableBooksSort({ ...availableBooksSort, by: e.target.value })}
-                >
-                  <option value="title">Title</option>
-                  <option value="author">Author</option>
-                  <option value="genre">Genre</option>
-                  <option value="available_copies">Available Copies</option>
-                </select>
-                <select
-                  className="form-select"
-                  style={{ width: '120px' }}
-                  value={availableBooksSort.order}
-                  onChange={(e) => setAvailableBooksSort({ ...availableBooksSort, order: e.target.value })}
-                >
-                  <option value="asc">Ascending</option>
-                  <option value="desc">Descending</option>
-                </select>
-              </div>
-            </div>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Author</th>
-                  <th>Genre</th>
-                  <th>Available Copies</th>
-                  <th>Total Copies</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortData(availableBooks.books, availableBooksSort.by, availableBooksSort.order).map(book => (
-                  <tr key={book.id}>
-                    <td><strong>{book.title}</strong></td>
-                    <td>{book.author}</td>
-                    <td>{book.genre}</td>
-                    <td>{book.available_copies}</td>
-                    <td>{book.total_copies}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
 
         {activeTab === 'issued' && issuedBooks && (
           <div>

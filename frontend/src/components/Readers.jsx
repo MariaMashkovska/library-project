@@ -40,7 +40,14 @@ function Readers() {
 
     // Apply category filter
     if (filters.category !== 'all') {
-      filtered = filtered.filter(reader => reader.category === filters.category)
+      const categoryMap = {
+        'REGULAR': 'Regular',
+        'STUDENT': 'Student',
+        'SENIOR': 'Senior',
+        'VIP': 'VIP'
+      }
+      const categoryValue = categoryMap[filters.category] || filters.category
+      filtered = filtered.filter(reader => reader.category === categoryValue)
     }
 
     // Apply sorting
@@ -85,6 +92,24 @@ function Readers() {
       loadReaders()
     } catch (error) {
       console.error('Error creating reader:', error)
+    }
+  }
+
+  const handleDeleteReader = async (readerId) => {
+    if (!window.confirm('Are you sure you want to delete this reader? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      await readersAPI.delete(readerId)
+      loadReaders()
+    } catch (error) {
+      console.error('Error deleting reader:', error)
+      if (error.response?.data?.error) {
+        alert(error.response.data.error)
+      } else {
+        alert('Failed to delete reader. Make sure they have no active rentals.')
+      }
     }
   }
 
@@ -179,6 +204,7 @@ function Readers() {
             <th>Address</th>
             <th>Telephone</th>
             <th>Category</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -196,6 +222,15 @@ function Readers() {
                 }`}>
                   {reader.category}
                 </span>
+              </td>
+              <td>
+                <button
+                  className="button button-danger"
+                  style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                  onClick={() => handleDeleteReader(reader.id)}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

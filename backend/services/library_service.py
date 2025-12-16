@@ -152,7 +152,7 @@ class LibraryService:
         rentals = self.rental_repo.get_all()
         
         total_deposits = sum(r.deposit_paid for r in rentals)
-        total_rental_income = sum(r.rental_cost for r in rentals if r.status == RentalStatus.RETURNED)
+        total_rental_income = sum(r.rental_cost for r in rentals if r.status in [RentalStatus.RETURNED, RentalStatus.DAMAGED])
         total_fines = sum(r.fine_amount + r.damage_fine for r in rentals)
         total_revenue = total_rental_income + total_fines
         

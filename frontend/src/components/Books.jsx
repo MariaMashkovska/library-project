@@ -47,7 +47,18 @@ function Books() {
     }
 
     if (filters.genre !== 'all') {
-      filtered = filtered.filter(book => book.genre === filters.genre)
+      const genreMap = {
+        'FICTION': 'Fiction',
+        'NON_FICTION': 'Non-Fiction',
+        'SCIENCE': 'Science',
+        'HISTORY': 'History',
+        'BIOGRAPHY': 'Biography',
+        'MYSTERY': 'Mystery',
+        'ROMANCE': 'Romance',
+        'FANTASY': 'Fantasy'
+      }
+      const genreValue = genreMap[filters.genre] || filters.genre
+      filtered = filtered.filter(book => book.genre === genreValue)
     }
 
     filtered.sort((a, b) => {
@@ -107,6 +118,24 @@ function Books() {
       loadBooks()
     } catch (error) {
       console.error('Error creating book:', error)
+    }
+  }
+
+  const handleDeleteBook = async (bookId) => {
+    if (!window.confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      await booksAPI.delete(bookId)
+      loadBooks()
+    } catch (error) {
+      console.error('Error deleting book:', error)
+      if (error.response?.data?.error) {
+        alert(error.response.data.error)
+      } else {
+        alert('Failed to delete book. Make sure it has no active rentals.')
+      }
     }
   }
 
@@ -215,6 +244,7 @@ function Books() {
             <th>Copies</th>
             <th>Available</th>
             <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -234,6 +264,15 @@ function Books() {
                 ) : (
                   <span className="badge badge-danger">Unavailable</span>
                 )}
+              </td>
+              <td>
+                <button
+                  className="button button-danger"
+                  style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                  onClick={() => handleDeleteBook(book.id)}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

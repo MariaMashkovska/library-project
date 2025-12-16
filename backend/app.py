@@ -84,6 +84,27 @@ def get_book(book_id):
     })
 
 
+@app.route('/api/books/<int:book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    """Delete a book"""
+    try:
+        book = library.book_repo.get_by_id(book_id)
+        if not book:
+            return jsonify({'error': 'Book not found'}), 404
+        
+        # Check for non-returned rentals (ACTIVE or OVERDUE)
+        non_returned_rentals = library.rental_repo.get_non_returned_rentals()
+        has_active_rentals = any(r.book_id == book_id for r in non_returned_rentals)
+        
+        if has_active_rentals:
+            return jsonify({'error': 'Cannot delete book with active rentals'}), 400
+        
+        library.book_repo.delete(book_id)
+        return jsonify({'message': 'Book deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to delete book: {str(e)}'}), 500
+
+
 @app.route('/api/readers', methods=['GET'])
 def get_readers():
     """Get all readers"""
@@ -130,6 +151,27 @@ def get_reader(reader_id):
         'telephone': reader.telephone,
         'category': reader.category.value
     })
+
+
+@app.route('/api/readers/<int:reader_id>', methods=['DELETE'])
+def delete_reader(reader_id):
+    """Delete a reader"""
+    try:
+        reader = library.reader_repo.get_by_id(reader_id)
+        if not reader:
+            return jsonify({'error': 'Reader not found'}), 404
+        
+        # Check for non-returned rentals (ACTIVE or OVERDUE)
+        non_returned_rentals = library.rental_repo.get_non_returned_rentals()
+        has_active_rentals = any(r.reader_id == reader_id for r in non_returned_rentals)
+        
+        if has_active_rentals:
+            return jsonify({'error': 'Cannot delete reader with active rentals'}), 400
+        
+        library.reader_repo.delete(reader_id)
+        return jsonify({'message': 'Reader deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to delete reader: {str(e)}'}), 500
 
 
 @app.route('/api/rentals', methods=['POST'])
